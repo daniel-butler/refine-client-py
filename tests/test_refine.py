@@ -76,7 +76,7 @@ class RefineTest(refinetest.RefineTestCase):
         export.pop(0)
         export.pop(len(export)-1)
         for row in export:
-            self.assertTrue(row[3] == 'F' or row[3] == 'M')
+            self.assertTrue(row[3] in ['F', 'M'])
 
     # Not sure what I am dong wrong here
     # def test_invalid_type_raises_InvalidFileFormatError(self):

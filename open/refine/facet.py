@@ -196,8 +196,7 @@ class FacetsResponse(object):
                 self.facets = [FacetResponse(fr) for fr in facet_responses]
 
             def __iter__(self):
-                for facet in self.facets:
-                    yield facet
+                yield from self.facets
 
             def __getitem__(self, index):
                 if not isinstance(index, int):

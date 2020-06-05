@@ -110,7 +110,7 @@ class Refine:
 
     def new_project(self, project_file=None, project_url=None, project_name=None, project_format='text/line-based/*sv',
                     project_file_name=None, **opts):
-        if (project_file and project_url) or (not project_file and not project_url):
+        if (project_file and project_url) or not (project_file or project_url):
             raise ValueError('Either a project_file or project_url must be set. Both cannot be used.')
         params = {
             'project_name': self.set_project_name(project_name, project_file)
@@ -169,8 +169,7 @@ class Refine:
     def get_project_id(url):
         url_params = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
         if 'project' in url_params:
-            project_id = url_params['project'][0]
-            return project_id
+            return url_params['project'][0]
         else:
             raise Exception('Project not created')
 
@@ -235,7 +234,7 @@ class Refine:
                 'store_blank_cells_as_nulls': True,
                 'include_file_sources': False}
         }
-        if file_format in new_project_defaults.keys():
+        if file_format in new_project_defaults:
             return new_project_defaults[file_format]
         else:
             raise InvalidFileFormat
@@ -440,10 +439,7 @@ class RefineProject:
     def get_rows(self, facets=None, sort_by=None, start=0, limit=10):
         if facets:
             self.engine.set_facets(facets)
-        if sort_by is None:
-            self.sorting = facet.Sorting([])
-        elif sort_by is not None:
-            self.sorting = facet.Sorting(sort_by)
+        self.sorting = facet.Sorting([]) if sort_by is None else facet.Sorting(sort_by)
         response = self.do_json('get-rows',
                                 params={'start': start, 'limit': limit}, data={'sorting': self.sorting.as_json()})
         return self.rows_response_factory(response)
@@ -451,10 +447,9 @@ class RefineProject:
     def reorder_rows(self, sort_by=None):
         if sort_by is not None:
             self.sorting = facet.Sorting(sort_by)
-        response = self.do_json('reorder-rows', params={'sorting': self.sorting.as_json()})
         # clear sorting
         # self.sorting = facet.Sorting()
-        return response
+        return self.do_json('reorder-rows', params={'sorting': self.sorting.as_json()})
 
     def remove_rows(self, facets=None):
         if facets:
@@ -462,14 +457,13 @@ class RefineProject:
         return self.do_json('remove-rows')
 
     def text_transform(self, column, expression, on_error='set-to-blank', repeat=False, repeat_count=10):
-        response = self.do_json('text-transform', params={
+        return self.do_json('text-transform', params={
             'columnName': column,
             'expression': expression,
             'onError': on_error,
             'repeat': repeat,
             'repeatCount': repeat_count
         })
-        return response
 
     def edit(self, column, edit_from, edit_to):
         edits = [{'from': [edit_from], 'to': edit_to}]
@@ -478,8 +472,10 @@ class RefineProject:
     def mass_edit(self, column, edits, expression='value'):
         """edits is [{'from': ['foo'], 'to': 'bar'}, {...}]"""
         edits = json.dumps(edits)
-        response = self.do_json('mass-edit', params={'columnName': column, 'expression': expression, 'edits': edits})
-        return response
+        return self.do_json(
+            'mass-edit',
+            params={'columnName': column, 'expression': expression, 'edits': edits},
+        )
 
     clusterer_defaults = {
         'binning': {
